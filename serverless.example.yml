@@ -1,0 +1,21 @@
+service: expense-tracker-apis
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  stage: dev
+  timeout: 20
+  region: ap-south-1
+  runtime: nodejs18.x
+
+functions:
+  express-api:
+    handler: handler.nodejsapis
+    events:
+      - http: ANY /
+    environment:
+      PORT: <YOUR PORT NO>
+      DATABASE: <YOUR DATABASE NAME>
+      URL: <YOUR MONGODB CONNECTION URL>
+      SESSION_SECRET: <YOUR SESSION_SECRET>
+      JWT_SECRET: <YOUR JWT_SECRET:>

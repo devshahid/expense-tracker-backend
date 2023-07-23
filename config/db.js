@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
-const DATABASE = process.env.DATABASE;
-const URL = `${process.env.URL}${DATABASE}`;
-
+const DATABASE =
+  process.env.NODE_ENV === 'development' ? process.env.DEV_DATABASE : process.env.PROD_DATABASE;
+const URL =
+  process.env.NODE_ENV === 'development'
+    ? `${process.env.DEV_MONGO_URL}${DATABASE}`
+    : `${process.env.PROD_MONGO_URL}${DATABASE}`;
+console.log(DATABASE, URL);
 const connectDB = async () => {
   try {
     await mongoose.connect(URL, {
