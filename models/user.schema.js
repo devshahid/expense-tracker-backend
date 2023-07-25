@@ -10,14 +10,21 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  googleLoginId: {
+    type: String,
+    unique: true,
+  },
   password: {
     type: String,
-    required: true,
   },
   mobileNumber: {
     type: Number,
-    required: true,
     unique: true,
+  },
+  isGoogleLogin: {
+    type: Boolean,
+    required: true,
+    default: false,
   },
   createdAt: {
     type: Date,
