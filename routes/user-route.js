@@ -7,5 +7,6 @@ const Authenticate = require('../helpers/authenticate');
 router.post('/login', loginHandler);
 router.post('/sign-up', signupHandler);
 router.get('/getAllUsers', Authenticate, getUsersHandler);
+router.post('/logout', loginHandler);
 
 module.exports = router;

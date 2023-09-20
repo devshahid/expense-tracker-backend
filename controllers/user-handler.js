@@ -4,7 +4,8 @@ const bcrypt = require('bcrypt');
 class UserHandler {
   async loginHandler(req, res) {
     try {
-      const { email, password, isGoogleLogin, googleLoginId } = req.body;
+      const { email, password, isGoogleLogin, googleLoginId, name } = req.body;
+      console.log('reqbody => ', req.body);
       if (!isGoogleLogin) {
         if (!email || !password) {
           res.json({ message: 'Fill all the details' });
@@ -15,35 +16,44 @@ class UserHandler {
         if (match) {
           const token = jwt.sign({ userId: isUser._id }, process.env.JWT_SECRET);
           req.session.userId = token;
-          res.json(token);
+          return res.json({ token, userId: isUser._id });
         } else {
-          res.json({ message: 'User not exist' });
+          return res.json({ message: 'User not exist' });
         }
       } else {
         if (!email || !googleLoginId) {
-          res.json({ message: 'Required fields are empty' });
-          return;
+          return res.json({ message: 'Required fields are empty' });
         }
         const isUser = await User.findOne({ email, googleLoginId });
         if (isUser) {
           const token = jwt.sign({ userId: isUser._id }, process.env.JWT_SECRET);
           req.session.userId = token;
-          res.json(token);
+          return res.json({ token, userId: isUser._id });
         } else {
-          res.json({ message: 'User not exist' });
+          const newUser = new User({
+            name,
+            email,
+            googleLoginId,
+            isGoogleLogin,
+          });
+          const savedUser = await newUser.save();
+          console.log('savedUser => ', savedUser);
+          return res
+            .status(201)
+            .json({ status: true, msg: 'User created successfully', userData: savedUser });
         }
       }
     } catch (err) {
-      res.status(501).json({ message: err });
-      console.log(err);
+      console.log('login duplicate value => ', err);
+      return res.status(501).json({ message: err });
     }
   }
   async signupHandler(req, res) {
     try {
-      const { name, email, mobileNumber, password } = req.body;
+      console.log('req body => ', req.body);
+      const { name, email, mobileNumber, password, googleLoginId } = req.body;
       if (!name || !email || !mobileNumber || !password) {
-        res.status(400).json({ message: 'Please enter all the details' });
-        return;
+        return res.status(400).json({ message: 'Please enter all the details' });
       }
       const encryptedPassword = await bcrypt.hash(password, 10);
       const newUser = new User({
@@ -51,12 +61,13 @@ class UserHandler {
         email,
         mobileNumber,
         password: encryptedPassword,
+        googleLoginId,
       });
       const savedUser = await newUser.save();
-      res.status(201).json(savedUser);
+      res.status(201).json({ status: true, msg: 'User created successfully', userData: savedUser });
     } catch (err) {
-      res.status(501).json({ message: err });
-      console.log(err);
+      console.log('sign up duplicate value => ', err);
+      return res.status(501).json({ status: false, message: err });
     }
   }
   async getUsersHandler(req, res) {
@@ -65,6 +76,15 @@ class UserHandler {
       res.json(users);
     } catch (err) {
       res.status(501).json({ message: err });
+    }
+  }
+  async logoutHandler(req, res) {
+    try {
+      delete req.session.userId; // remove session variable userId from server side when user logs out
+      res.json({ status: true, msg: 'Log Out Successfully' });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ status: false, msg: 'Something went wrong' });
     }
   }
 }

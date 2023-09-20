@@ -5,53 +5,60 @@ const jwt = require('jsonwebtoken');
 const schema = Joi.object({
   name: Joi.string().required(),
   amount: Joi.number().required(),
-  type: Joi.string().required(),
-  via: Joi.string().required(),
+  category: Joi.string().required(),
+  paymentMode: Joi.string().required(),
+  isExpense: Joi.boolean().required(),
+  date: Joi.date().iso().required(),
 });
 
-const addTransactionHandler = async (req, res) => {
-  try {
-    const { error, value } = schema.validate(req.body);
-    if (error) {
-      res.json({ errorMessage: error.details });
+class TransactionHandler {
+  async addTransactionHandler(req, res) {
+    try {
+      const { error, value } = schema.validate(req.body);
+      if (error) {
+        console.log(error);
+        return res.json({ errorMessage: error.details });
+      }
+      const { name, amount, category, isExpense, description, date, paymentMode } = value;
+      const { userId } = jwt.verify(req.session.userId, process.env.JWT_SECRET);
+      const newTransaction = new Transactions({
+        name,
+        amount,
+        type: category,
+        via: isExpense ? 'Debit' : 'Credit',
+        description,
+        date,
+        userId,
+        paymentMode,
+      });
+      const result = await newTransaction.save();
+      return res.status(201).json({ result });
+    } catch (err) {
+      console.log(err);
+      return res.status(400).json({ error: err });
     }
-    const { name, amount, type, via, description, date } = value;
-    const { userId } = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
-    const newTransaction = new Transactions({
-      name,
-      amount,
-      type,
-      via,
-      description,
-      date,
-      userId,
-    });
-    const result = await newTransaction.save();
-    res.json(result);
-  } catch (err) {
-    res.status(400).json({ error: err });
   }
-};
 
-const getTransaction = async (req, res) => {
-  const { id } = req.params;
-  if (!id) {
-    res.json({ message: 'transaction id missing' });
-    return;
-  }
-  const result = await Transactions.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(id) } },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'userId',
-        foreignField: '_id',
-        as: 'userDetails',
+  async getTransaction(req, res) {
+    const { id } = req.params;
+    if (!id) {
+      res.json({ message: 'transaction id missing' });
+      return;
+    }
+    const result = await Transactions.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
       },
-    },
-    { $unwind: '$userDetails' },
-  ]);
-  res.json({ result });
-};
+      { $unwind: '$userDetails' },
+    ]);
+    res.json({ result });
+  }
+}
 
-module.exports = { addTransactionHandler, getTransaction };
+module.exports = new TransactionHandler();

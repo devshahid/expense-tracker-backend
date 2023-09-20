@@ -12,14 +12,12 @@ const userSchema = new mongoose.Schema({
   },
   googleLoginId: {
     type: String,
-    unique: true,
   },
   password: {
     type: String,
   },
   mobileNumber: {
     type: Number,
-    unique: true,
   },
   isGoogleLogin: {
     type: Boolean,
