@@ -1,6 +1,7 @@
 const User = require('../models/user.schema');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+
+const { encryptPassword, comparePassword } = require('../utils/encrypt');
 class UserHandler {
   async loginHandler(req, res) {
     try {
@@ -12,13 +13,13 @@ class UserHandler {
           return;
         }
         const isUser = await User.findOne({ email });
-        const match = await bcrypt.compare(password, isUser.password);
+        const match = await comparePassword(isUser.password, password);
         if (match) {
           const token = jwt.sign({ userId: isUser._id }, process.env.JWT_SECRET);
           req.session.userId = token;
           return res.json({ token, userId: isUser._id });
         } else {
-          return res.json({ message: 'User not exist' });
+          return res.status(401).json({ message: 'User not exist' });
         }
       } else {
         if (!email || !googleLoginId) {
@@ -51,20 +52,27 @@ class UserHandler {
   async signupHandler(req, res) {
     try {
       console.log('req body => ', req.body);
-      const { name, email, mobileNumber, password, googleLoginId } = req.body;
+      const { name, email, mobileNumber, password } = req.body;
       if (!name || !email || !mobileNumber || !password) {
         return res.status(400).json({ message: 'Please enter all the details' });
       }
-      const encryptedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await encryptPassword(password);
       const newUser = new User({
         name,
         email,
         mobileNumber,
-        password: encryptedPassword,
-        googleLoginId,
+        password: hashedPassword,
       });
       const savedUser = await newUser.save();
-      res.status(201).json({ status: true, msg: 'User created successfully', userData: savedUser });
+      if (savedUser) {
+        return res
+          .status(201)
+          .json({ status: true, message: 'User created successfully', userData: savedUser });
+      } else {
+        return res
+          .status(501)
+          .json({ status: false, message: 'Something went wrong while creating account' });
+      }
     } catch (err) {
       console.log('sign up duplicate value => ', err);
       return res.status(501).json({ status: false, message: err });

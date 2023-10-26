@@ -19,6 +19,8 @@ app.use(
   }),
 );
 connectDB();
-
+app.get('/', (req, res) => {
+  res.send('Server Running');
+});
 app.use('/api', router);
 module.exports = app;
