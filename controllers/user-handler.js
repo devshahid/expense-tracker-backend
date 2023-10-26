@@ -16,8 +16,12 @@ class UserHandler {
         const match = await comparePassword(isUser.password, password);
         if (match) {
           const token = jwt.sign({ userId: isUser._id }, process.env.JWT_SECRET);
-          req.session.userId = token;
-          return res.json({ token, userId: isUser._id });
+          return res.json({
+            token,
+            userId: isUser._id,
+            message: 'User exist',
+            userName: isUser.name,
+          });
         } else {
           return res.status(401).json({ message: 'User not exist' });
         }
