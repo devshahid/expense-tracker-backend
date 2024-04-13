@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema({
   googleLoginId: {
     type: String,
   },
+  profilePhoto: {
+    type: String,
+    default: '',
+  },
   password: {
     type: String,
   },

@@ -5,7 +5,7 @@ const { encryptPassword, comparePassword } = require('../utils/encrypt');
 class UserHandler {
   async loginHandler(req, res) {
     try {
-      const { email, password, isGoogleLogin, googleLoginId, name } = req.body;
+      const { email, password, isGoogleLogin, googleLoginId, name, profilePhoto } = req.body;
       console.log('reqbody => ', req.body);
       if (!isGoogleLogin) {
         if (!email || !password) {
@@ -21,6 +21,7 @@ class UserHandler {
             userId: isUser._id,
             message: 'User exist',
             userName: isUser.name,
+            profilePhoto: isUser.profilePhoto,
           });
         } else {
           return res.status(401).json({ message: 'User not exist' });
@@ -31,15 +32,24 @@ class UserHandler {
         }
         const isUser = await User.findOne({ email, googleLoginId });
         if (isUser) {
-          const token = jwt.sign({ userId: isUser._id }, process.env.JWT_SECRET);
-          req.session.userId = token;
-          return res.json({ token, userId: isUser._id });
+          const token = jwt.sign(
+            { userId: isUser._id, userName: isUser.name },
+            process.env.JWT_SECRET,
+          );
+          return res.json({
+            token,
+            userId: isUser._id,
+            userName: isUser.name,
+            profilePhoto: isUser.profilePhoto,
+          });
         } else {
           const newUser = new User({
             name,
             email,
             googleLoginId,
             isGoogleLogin,
+            password: password ?? '',
+            profilePhoto,
           });
           const savedUser = await newUser.save();
           console.log('savedUser => ', savedUser);
